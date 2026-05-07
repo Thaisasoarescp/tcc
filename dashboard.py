@@ -32,7 +32,7 @@ if not tem_json and not tem_xlsx:
     st.error("Nenhum arquivo de dados encontrado. Coloque os arquivos na mesma pasta que este dashboard.")
     st.stop()
 
-* SEÇÃO 1 - SÉRIE HISTÓRICA XLSX
+#  SEÇÃO 1 - SÉRIE HISTÓRICA XLSX
 
 if tem_xlsx:
     st.header("📅 Série Histórica — 5 Anos (UOL + Jovem Pan)")
