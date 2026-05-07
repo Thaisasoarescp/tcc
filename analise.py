@@ -26,7 +26,7 @@ for noticia in noticias:
 df = pd.DataFrame(noticias)
 
 df.to_csv(
-    "noticias_com_sentimento.csv",
+    r"G:\Meu Drive\Tcc\dados\noticias_com_sentimento.csv",
     index=False,
     encoding="utf-8-sig"
 )
