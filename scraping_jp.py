@@ -10,13 +10,12 @@ headers = {
 }
 palavras_chave = [
     "chuva", "enchente", "alagamento", "deslizamento",
-    "tempestade", "ciclone", "furacão", "seca",
-    "incêndio", "queimada", "desastre", "tragédia"
+    "tempestade", "ciclone", "furacão", "seca", "queimada", "desastre", "tragédia"
 ]
 
 dados = []
 
-for pagina in range(1, 20):  
+for pagina in range(1, 1000):  
     
     url = URL.format(pagina)
     print(f"Coletando página {pagina}...")
