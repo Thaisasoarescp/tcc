@@ -64,5 +64,66 @@ for pagina in range(1, 1000):
 df = pd.DataFrame(dados).drop_duplicates()
 
 df.to_csv("noticias_desastres_jp.csv", index=False, encoding="utf-8-sig")
-
 print("Finalizado! Total coletado:", len(df))
+
+
+
+# Carrega o CSV
+df = pd.read_csv("noticias_desastres_jp.csv")
+
+descricoes = []
+
+headers = {
+    "User-Agent": "Mozilla/5.0"
+}
+
+for link in df["link"]:
+
+    try:
+        response = requests.get(link, headers=headers, timeout=30)
+
+        if response.status_code == 200:
+
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            article = soup.find("article")
+
+            if article:
+
+                h3 = article.find("h3")
+
+                if h3:
+
+                    p = h3.find("p")
+
+                    if p:
+                        descricao = p.get_text(strip=True)
+                    else:
+                        descricao = None
+
+                else:
+                    descricao = None
+
+            else:
+                descricao = None
+
+        else:
+            descricao = None
+
+    except Exception as e:
+        print(f"Erro em {link}: {e}")
+        descricao = None
+
+    descricoes.append(descricao)
+
+    time.sleep(5)
+
+# Nova coluna
+df["descricao"] = descricoes
+
+# Resultado
+print(df[["titulo", "descricao"]].head(5))
+
+df.to_csv("noticias_desastres_jp.csv", index=False, encoding="utf-8-sig")
+
+
