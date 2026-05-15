@@ -1,0 +1,92 @@
+!pip install feedparser
+import feedparser
+import pandas as pd
+import time
+import re
+from urllib.parse import quote
+from datetime import datetime, timedelta
+
+def limpar_html(texto):
+    if not texto: return ""
+    clean = re.compile('<.*?>')
+    return re.sub(clean, '', texto)
+
+def coletar_noticias_focadas():
+    hoje = datetime.now()
+    data_inicio = hoje - timedelta(days=2*365)
+    intervalos = pd.date_range(start=data_inicio, end=hoje, freq='15D')
+
+    # Termos de busca mais "pesados" para evitar notícias leves/entretenimento
+    eixos = [
+        '("enchente" OR "inundação" OR "desmoronamento" OR "desastre natural")',
+        '("seca extrema" OR "estiagem" OR "incêndio florestal" OR "queimada")',
+        '("alerta da defesa civil" OR "estado de calamidade" OR "temporais")'
+    ]
+    
+    filtro_portais = '(site:g1.globo.com OR site:folha.uol.com.br)'
+    
+    # Lista de exclusão para o Google (Dribla o algoritmo)
+    excluir_google = '-ingresso -cinema -mães -promoção -"imposto de renda" -futebol -bbb -oferta -vaga -curso'
+
+    # Lista de bloqueio manual no Python (Garante a limpeza final)
+    termos_proibidos = [
+        "ingresso", "cinema", "homenagear", "mães", "lote", "imposto de renda", 
+        "gratuito", "saiba mais", "vaga", "curso", "promoção", "futebol", 
+        "campeonato", "político", "guia folha", "oferta", "shoppings"
+    ]
+
+    lista_final = []
+    urls_processadas = set()
+
+    print(f"🚀 Iniciando coleta blindada nos últimos 2 anos...")
+
+    for i in range(len(intervalos)-1):
+        inicio = intervalos[i].strftime('%Y-%m-%d')
+        fim = intervalos[i+1].strftime('%Y-%m-%d')
+
+        for eixo in eixos:
+            query = f'{eixo} {filtro_portais} {excluir_google} after:{inicio} before:{fim}'
+            url = f"https://news.google.com/rss/search?q={quote(query)}&hl=pt-BR&gl=BR&ceid=BR:pt-419"
+            
+            feed = feedparser.parse(url)
+            
+            for entry in feed.entries:
+                if entry.link not in urls_processadas:
+                    titulo = entry.title.lower()
+                    
+                    # FILTRO DE SEGURANÇA: Se tiver qualquer termo proibido no título, pula
+                    if any(proibido in titulo for proibido in termos_proibidos):
+                        continue
+                    
+                    # FILTRO DE CONTEXTO: O título DEVE ter algo relacionado a desastre
+                    termos_validos = ["chuva", "enchente", "seca", "queimada", "alerta", "clima", "temporal", "desastre", "emergência", "defesa civil"]
+                    if not any(valido in titulo for valido in termos_validos):
+                        continue
+
+                    resumo_bruto = entry.get('summary', '') or entry.get('description', '')
+                    resumo_limpo = limpar_html(resumo_bruto)
+
+                    lista_final.append({
+                        "Portal": entry.source.title if 'source' in entry else "G1/Folha",
+                        "Título": entry.title.split(" - ")[0],
+                        "Resumo": resumo_limpo[:500],
+                        "Data": entry.published,
+                        "URL": entry.link
+                    })
+                    urls_processadas.add(entry.link)
+
+        print(f"📅 {inicio} a {fim} | Acumulado: {len(lista_final)} notícias limpas")
+        time.sleep(1)
+
+    if lista_final:
+        df = pd.DataFrame(lista_final)
+        df['Data_DT'] = pd.to_datetime(df['Data'], errors='coerce')
+        df = df.sort_values(by='Data_DT', ascending=False).drop(columns=['Data_DT'])
+        
+        nome_arq = "clima_G1_Folha_LIMPO.xlsx"
+        df[['Portal', 'Título', 'Resumo', 'Data', 'URL']].to_excel(nome_arq, index=False)
+        print(f"\n✅ Concluído! O arquivo '{nome_arq}' está pronto e muito mais preciso.")
+    else:
+        print("\n❌ Nenhuma notícia relevante encontrada após a filtragem.")
+
+coletar_noticias_focadas()
