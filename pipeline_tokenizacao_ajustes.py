@@ -57,8 +57,8 @@ def normalizar_texto(texto):
     """Etapa 2: Minúsculas e emojis."""
     texto = str(texto)
     texto = texto.lower()
-    # Substitui Emojis e Números
-    texto = emoji.replace_emoji(texto, replace='[EMOJI]')
+    # Substitui Emojis
+    texto = emoji.replace_emoji(texto, replace='')
     return texto
 
 def processar_pipeline_completa(texto_original):
@@ -71,7 +71,7 @@ def processar_pipeline_completa(texto_original):
     texto_normalizado = normalizar_texto(texto_limpo)
     
     # ETAPA 3: Processamento SpaCy
-    doc = nlp(texto_limpo)
+    doc = nlp(texto_normalizado)
 
     #ETAPA 4: Extração das entiades
     entidades = [{  
@@ -123,12 +123,18 @@ for i, noticia in enumerate(noticias):
     print(f"[{i+1}/{len(noticias)}] Processando: {noticia.get('titulo', 'Sem título')[:50]}...")
     
     titulo = noticia.get('titulo', '')
-    print(f"[{i+1}/{len(noticias)}] Processando: {titulo[:50]}...")
-    if not titulo:
+    descricao = noticia.get('subtitulo', '')
+
+    # Junta título + subtítulo
+    texto_completo = f"{titulo} {descricao}"
+
+    print(f"[{i+1}/{len(noticias)}] Processando: {texto_completo[:50]}...")
+
+    if not texto_completo.strip():
         continue
         
     # Chama a pipeline que retorna o dicionário com todas as etapas
-    resultado_pipeline = processar_pipeline_completa(titulo)
+    resultado_pipeline = processar_pipeline_completa(texto_completo)
     
     # Adiciona à lista do TF-IDF
     textos_para_tfidf.append(resultado_pipeline["etapa_6_texto_final"])
@@ -139,6 +145,8 @@ for i, noticia in enumerate(noticias):
         "site": noticia.get("site"),
         "data": noticia.get("data"),
         "titulo_original": titulo,
+        "subtitulo_original": descricao,
+        "texto_original": texto_completo,
         "url": noticia.get("url"),
         "pipeline_nlp": resultado_pipeline # Aqui estão todas as etapas salvas
     }
